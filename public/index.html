@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BGarage — Sistema de Gestión</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg:#f4f5f7; --surface:#ffffff; --surface2:#f0f1f3; --surface3:#e4e6ea;
+  --accent:#c8a84b; --accent2:#c0392b; --accent3:#27ae60;
+  --text:#1a1c20; --text2:#6b7280; --text3:#9ca3af;
+  --border:#e4e6ea; --radius:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;gap:16px;
+  padding:0 28px;height:58px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:38px;height:38px;}
+.logo-text{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:.06em;color:var(--text);}
+.logo-text span{color:var(--accent);}
+.nav{display:flex;gap:4px;margin-left:auto;}
+.nav-btn{
+  padding:7px 18px;border-radius:6px;font-size:.85rem;font-weight:500;
+  cursor:pointer;border:none;background:none;color:var(--text2);
+  transition:all .18s;letter-spacing:.02em;
+}
+.nav-btn:hover{background:var(--surface2);color:var(--text);}
+.nav-btn.active{background:var(--surface2);color:var(--accent);font-weight:600;}
+
+/* ── MAIN ── */
+main{flex:1;padding:28px;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.page-title{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:700;letter-spacing:.04em;color:var(--text);}
+.page-title span{color:var(--text3);font-weight:400;font-size:1rem;margin-left:8px;}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:9px 20px;border-radius:7px;font-size:.85rem;font-weight:600;
+  cursor:pointer;border:none;transition:all .18s;letter-spacing:.03em;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#b8962e;}
+.btn-secondary{background:var(--surface);color:var(--text2);border:1px solid var(--border);}
+.btn-secondary:hover{color:var(--text);border-color:var(--text3);}
+.btn-danger{background:rgba(192,57,43,.08);color:#c0392b;border:1px solid rgba(192,57,43,.2);}
+.btn-danger:hover{background:rgba(192,57,43,.15);}
+.btn-sm{padding:6px 14px;font-size:.78rem;}
+.btn-icon{padding:6px 10px;font-size:.85rem;}
+
+/* ── CARDS GRID ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px 20px;
+  transition:box-shadow .18s, border-color .18s;
+}
+.card:hover{border-color:#c8a84b44;box-shadow:0 2px 12px rgba(0,0,0,.08);}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
+.card-num{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;}
+.card-title{font-size:1rem;font-weight:600;color:var(--text);margin-top:2px;}
+.card-sub{font-size:.82rem;color:var(--text2);margin-top:2px;}
+.card-actions{display:flex;gap:6px;flex-shrink:0;}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.card-total{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:700;color:var(--accent);}
+.card-date{font-size:.75rem;color:var(--text3);}
+
+/* ── ESTADO BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+.badge-reparacion{background:rgba(39,174,96,.1);color:#1a9e50;border:1px solid rgba(39,174,96,.2);}
+.badge-presupuesto{background:rgba(200,168,75,.1);color:#a8842a;border:1px solid rgba(200,168,75,.2);}
+.badge-entregado{background:rgba(107,114,128,.1);color:#6b7280;border:1px solid rgba(107,114,128,.2);}
+
+/* ── KANBAN ── */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;}
+.kanban-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.kanban-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.kanban-title{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+.kanban-count{font-size:.75rem;background:var(--surface2);padding:2px 8px;border-radius:99px;color:var(--text2);}
+.kanban-body{padding:12px;display:flex;flex-direction:column;gap:10px;min-height:80px;}
+.kanban-card{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;cursor:pointer;
+  transition:box-shadow .18s,border-color .18s;
+}
+.kanban-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.kc-patente{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;}
+.kc-auto{font-size:.9rem;font-weight:600;margin-top:2px;color:var(--text);}
+.kc-tipo{font-size:.78rem;color:var(--text2);margin-top:3px;}
+.kc-owner{font-size:.75rem;color:var(--text3);margin-top:6px;}
+.kc-actions{display:flex;gap:6px;margin-top:10px;}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.4);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;width:100%;max-width:700px;
+  animation:slideUp .25s ease;margin:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.15);
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 0;}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;letter-spacing:.04em;color:var(--text);}
+.modal-close{background:none;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:4px;}
+.modal-close:hover{color:var(--text);background:var(--surface2);}
+.modal-body{padding:20px 24px;}
+.modal-footer{padding:16px 24px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);}
+
+/* ── FORM ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:.75rem;font-weight:600;color:var(--text2);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase;}
+.form-input,.form-select,.form-textarea{
+  width:100%;padding:9px 12px;border-radius:7px;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);font-family:'Barlow',sans-serif;font-size:.9rem;
+  outline:none;transition:border-color .18s;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--text3);}
+.form-textarea{resize:vertical;min-height:70px;}
+.form-select option{background:var(--surface);}
+
+/* ── ITEMS ── */
+.items-header{display:grid;grid-template-columns:1fr 90px 100px 36px;gap:8px;padding:6px 8px;font-size:.72rem;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;}
+.item-row{display:grid;grid-template-columns:1fr 90px 100px 36px;gap:8px;padding:4px 4px;align-items:center;margin-bottom:6px;}
+.item-row input{padding:7px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Barlow',sans-serif;font-size:.85rem;outline:none;transition:border-color .18s;width:100%;}
+.item-row input:focus{border-color:var(--accent);}
+.remove-item{background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;padding:4px;border-radius:4px;transition:color .15s;display:flex;align-items:center;justify-content:center;}
+.remove-item:hover{color:var(--accent2);}
+.items-add{margin-top:6px;display:flex;gap:8px;}
+.items-total{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;align-items:center;gap:16px;}
+.items-total-label{font-size:.85rem;color:var(--text2);}
+.items-total-value{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;color:var(--accent);}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:60px 20px;color:var(--text3);}
+.empty-icon{font-size:2.8rem;margin-bottom:12px;}
+.empty-title{font-size:1rem;font-weight:500;color:var(--text2);margin-bottom:4px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:1000;background:var(--surface);border:1px solid var(--border);padding:10px 18px;border-radius:8px;font-size:.85rem;color:var(--text);opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.12);}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* ── SECTION DIVIDER ── */
+.section-divider{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin:20px 0 10px;display:flex;align-items:center;gap:10px;}
+.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+@media(max-width:768px){
+  .kanban{grid-template-columns:1fr;}
+  .form-row,.form-row-3{grid-template-columns:1fr;}
+  .cards-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">
+    <!-- Logo auto más realista -->
+    <svg class="logo-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="38" height="38" rx="8" fill="#c8a84b" opacity=".12"/>
+      <!-- Carrocería sedan -->
+      <path d="M4 24 Q4 28 8 28 L30 28 Q34 28 34 24 L34 21 L31 21 L29 15 Q28 13 26 13 L12 13 Q10 13 9 15 L7 21 L4 21 Z" fill="#c8a84b" opacity=".9"/>
+      <!-- Techo cupé -->
+      <path d="M11 13 Q13 8 16 8 L22 8 Q25 8 27 13 Z" fill="#c8a84b"/>
+      <!-- Ventanas -->
+      <path d="M12.5 13 L14.5 9.5 L18.5 9.5 L18.5 13 Z" fill="white" opacity=".3"/>
+      <path d="M19.5 13 L19.5 9.5 L23.5 9.5 L25.5 13 Z" fill="white" opacity=".3"/>
+      <!-- Rueda izq -->
+      <circle cx="10" cy="27" r="4" fill="#3a3a3a"/>
+      <circle cx="10" cy="27" r="2" fill="#c8a84b" opacity=".7"/>
+      <!-- Rueda der -->
+      <circle cx="28" cy="27" r="4" fill="#3a3a3a"/>
+      <circle cx="28" cy="27" r="2" fill="#c8a84b" opacity=".7"/>
+      <!-- Faros -->
+      <rect x="5" y="20" width="4" height="2" rx="1" fill="white" opacity=".6"/>
+      <rect x="29" y="20" width="4" height="2" rx="1" fill="white" opacity=".4"/>
+      <!-- Parrilla -->
+      <rect x="5" y="22" width="4" height="1.5" rx=".5" fill="#c8a84b" opacity=".5"/>
+    </svg>
+    <span class="logo-text"><span>B</span>Garage</span>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showPage('presupuestos',this)">Presupuestos</button>
+    <button class="nav-btn" onclick="showPage('reparaciones',this)">Reparaciones</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- PRESUPUESTOS -->
+<div id="page-presupuestos" class="page active">
+  <div class="page-header">
+    <div class="page-title">Presupuestos <span id="presup-count"></span></div>
+    <button class="btn btn-primary" onclick="abrirModalPresupuesto()">+ Nuevo presupuesto</button>
+  </div>
+  <div class="cards-grid" id="presupuestos-list"></div>
+</div>
+
+<!-- REPARACIONES -->
+<div id="page-reparaciones" class="page">
+  <div class="page-header">
+    <div class="page-title">Reparaciones <span id="rep-count"></span></div>
+    <button class="btn btn-primary" onclick="abrirModalReparacion()">+ Nueva reparación</button>
+  </div>
+  <div class="kanban">
+    <div class="kanban-col">
+      <div class="kanban-header">
+        <span class="kanban-title" style="color:#1a9e50">En reparación</span>
+        <span class="kanban-count" id="cnt-reparacion">0</span>
+      </div>
+      <div class="kanban-body" id="body-reparacion"></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-header">
+        <span class="kanban-title" style="color:#a8842a">Presupuesto enviado</span>
+        <span class="kanban-count" id="cnt-presupuesto">0</span>
+      </div>
+      <div class="kanban-body" id="body-presupuesto"></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-header">
+        <span class="kanban-title" style="color:#6b7280">Entregado</span>
+        <span class="kanban-count" id="cnt-entregado">0</span>
+      </div>
+      <div class="kanban-body" id="body-entregado"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL PRESUPUESTO -->
+<div class="modal-overlay" id="modal-presupuesto">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-presup-title">Nuevo presupuesto</span>
+      <button class="modal-close" onclick="cerrarModal('modal-presupuesto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="presup-id">
+      <div class="section-divider">Datos del cliente</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre propietario</label>
+          <input class="form-input" id="presup-cliente" placeholder="Ej: Juan Pérez">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input class="form-input" id="presup-telefono" placeholder="+56 9 ...">
+        </div>
+      </div>
+      <div class="section-divider">Vehículo</div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Marca</label>
+          <input class="form-input" id="presup-marca" placeholder="Toyota">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Modelo</label>
+          <input class="form-input" id="presup-modelo" placeholder="Corolla">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Año</label>
+          <input class="form-input" id="presup-anio" placeholder="2018">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Patente</label>
+          <input class="form-input" id="presup-patente" placeholder="ABCD12" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kilometraje</label>
+          <input class="form-input" id="presup-km" placeholder="85.000 km">
+        </div>
+      </div>
+      <div class="section-divider">Ítems del presupuesto</div>
+      <div class="items-header">
+        <span>Descripción</span><span>Tipo</span><span>Valor</span><span></span>
+      </div>
+      <div id="presup-items"></div>
+      <div class="items-add">
+        <button class="btn btn-secondary btn-sm" onclick="agregarItem('presup-items','mano_obra')">+ Mano de obra</button>
+        <button class="btn btn-secondary btn-sm" onclick="agregarItem('presup-items','repuesto')">+ Repuesto</button>
+      </div>
+      <div class="items-total">
+        <span class="items-total-label">Total estimado</span>
+        <span class="items-total-value" id="presup-total">$0</span>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Notas adicionales</label>
+        <textarea class="form-textarea" id="presup-notas" placeholder="Observaciones, condiciones del presupuesto..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-presupuesto')">Cancelar</button>
+      <button class="btn btn-secondary" onclick="guardarPresupuesto(false)">Guardar borrador</button>
+      <button class="btn btn-primary" onclick="guardarPresupuesto(true)">Guardar y generar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REPARACIÓN -->
+<div class="modal-overlay" id="modal-reparacion">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-rep-title">Nueva reparación</span>
+      <button class="modal-close" onclick="cerrarModal('modal-reparacion')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rep-id">
+      <div class="section-divider">Propietario</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre propietario</label>
+          <input class="form-input" id="rep-cliente" placeholder="Ej: Carlos Díaz">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input class="form-input" id="rep-telefono" placeholder="+56 9 ...">
+        </div>
+      </div>
+      <div class="section-divider">Vehículo</div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Marca</label>
+          <input class="form-input" id="rep-marca" placeholder="Honda">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Modelo</label>
+          <input class="form-input" id="rep-modelo" placeholder="Civic">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Año</label>
+          <input class="form-input" id="rep-anio" placeholder="2020">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Patente</label>
+          <input class="form-input" id="rep-patente" placeholder="WXYZ34" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kilometraje ingreso</label>
+          <input class="form-input" id="rep-km" placeholder="45.000 km">
+        </div>
+      </div>
+      <div class="section-divider">Reparación</div>
+      <div class="form-group">
+        <label class="form-label">Tipo de reparación</label>
+        <input class="form-input" id="rep-tipo" placeholder="Ej: Cambio de frenos, afinamiento motor...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción / diagnóstico</label>
+        <textarea class="form-textarea" id="rep-descripcion" placeholder="Detalle del problema y trabajo a realizar..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select class="form-select" id="rep-estado">
+            <option value="en_reparacion">En reparación</option>
+            <option value="presupuesto_enviado">Presupuesto enviado</option>
+            <option value="entregado">Entregado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha entrega estimada</label>
+          <input class="form-input" type="date" id="rep-fecha-entrega">
+        </div>
+      </div>
+      <div class="section-divider">Ítems / Trabajos realizados</div>
+      <div class="items-header">
+        <span>Descripción</span><span>Tipo</span><span>Valor</span><span></span>
+      </div>
+      <div id="rep-items"></div>
+      <div class="items-add">
+        <button class="btn btn-secondary btn-sm" onclick="agregarItem('rep-items','mano_obra')">+ Mano de obra</button>
+        <button class="btn btn-secondary btn-sm" onclick="agregarItem('rep-items','repuesto')">+ Repuesto</button>
+      </div>
+      <div class="items-total">
+        <span class="items-total-label">Total</span>
+        <span class="items-total-value" id="rep-total">$0</span>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Observaciones finales</label>
+        <textarea class="form-textarea" id="rep-notas" placeholder="Recomendaciones, próxima revisión..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-reparacion')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarReparacion()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin;
+
+// ─── UTILS ────────────────────────────────────────────────────────────
+// MongoDB usa _id — esta función normaliza siempre a .id
+function getId(obj) { return obj._id || obj.id || ''; }
+
+const fmt     = n => '$' + Math.round(n||0).toLocaleString('es-CL');
+const fmtDate = s => s ? new Date(s).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+
+function toast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = ok ? 'rgba(39,174,96,.3)' : 'rgba(192,57,43,.3)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='presupuestos') loadPresupuestos();
+  if(name==='reparaciones') loadReparaciones();
+}
+
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ─── ITEMS ────────────────────────────────────────────────────────────
+function agregarItem(containerId, tipo, desc='', valor='') {
+  const container = document.getElementById(containerId);
+  const div = document.createElement('div');
+  div.className = 'item-row';
+  const tipoLabel = tipo==='mano_obra' ? 'Mano obra' : 'Repuesto';
+  const tipoColor = tipo==='mano_obra' ? '#a8842a' : '#2980b9';
+  div.innerHTML = `
+    <input class="item-desc" placeholder="${tipo==='mano_obra'?'Ej: Cambio de aceite':'Ej: Filtro de aire'}" value="${desc}">
+    <input readonly value="${tipoLabel}" style="font-size:.75rem;text-align:center;color:${tipoColor};cursor:default;font-weight:600">
+    <input class="item-valor" type="number" placeholder="0" value="${valor}" min="0" oninput="calcularTotal('${containerId}')">
+    <button class="remove-item" onclick="this.parentElement.remove();calcularTotal('${containerId}')">✕</button>
+  `;
+  container.appendChild(div);
+  calcularTotal(containerId);
+}
+
+function calcularTotal(containerId) {
+  const vals  = document.getElementById(containerId).querySelectorAll('.item-valor');
+  const total = Array.from(vals).reduce((s,v)=>s+parseFloat(v.value||0),0);
+  const prefix = containerId==='presup-items' ? 'presup' : 'rep';
+  document.getElementById(prefix+'-total').textContent = fmt(total);
+}
+
+function getItems(containerId) {
+  return Array.from(document.getElementById(containerId).querySelectorAll('.item-row')).map(r => {
+    const inputs = r.querySelectorAll('input');
+    return {
+      descripcion: inputs[0].value.trim(),
+      tipo:        inputs[1].value.includes('obra') ? 'mano_obra' : 'repuesto',
+      valor:       parseFloat(inputs[2].value||0)
+    };
+  }).filter(i => i.descripcion);
+}
+
+function calcularTotalItems(items) {
+  return (items||[]).reduce((s,i)=>s+(i.valor||0), 0);
+}
+
+// ─── PRESUPUESTOS ─────────────────────────────────────────────────────
+async function loadPresupuestos() {
+  try {
+    const res  = await fetch(API+'/api/presupuestos');
+    const data = await res.json();
+    const list = document.getElementById('presupuestos-list');
+    document.getElementById('presup-count').textContent = `(${data.length})`;
+
+    if(!data.length) {
+      list.innerHTML = `<div class="empty" style="grid-column:1/-1">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">Sin presupuestos aún</div>
+        <div class="empty-sub">Crea tu primer presupuesto</div>
+      </div>`;
+      return;
+    }
+    list.innerHTML = data.map(p => {
+      const id    = getId(p);
+      const total = calcularTotalItems(p.items);
+      return `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-num">N° ${String(p.numero||0).padStart(4,'0')} · ${fmtDate(p.fecha)}</div>
+            <div class="card-title">${p.cliente||'Sin nombre'}</div>
+            <div class="card-sub">${[p.marca,p.modelo,p.anio].filter(Boolean).join(' ')}${p.patente?' · '+p.patente.toUpperCase():''}</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-icon btn-secondary" onclick="editarPresupuesto('${id}')" title="Editar">✏️</button>
+            <button class="btn btn-icon btn-secondary" onclick="descargarPresupuestoPDF('${id}')" title="PDF">📄</button>
+            <button class="btn btn-icon btn-danger" onclick="eliminarPresupuesto('${id}')" title="Eliminar">🗑</button>
+          </div>
+        </div>
+        <div style="font-size:.8rem;color:var(--text3)">${(p.items||[]).length} ítem(s)</div>
+        <div class="card-footer">
+          <span class="card-total">${fmt(total)}</span>
+          <span class="card-date">${p.notas?p.notas.substring(0,40)+'…':''}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { toast('Error cargando presupuestos', false); }
+}
+
+function abrirModalPresupuesto() {
+  document.getElementById('presup-id').value = '';
+  document.getElementById('modal-presup-title').textContent = 'Nuevo presupuesto';
+  ['cliente','telefono','marca','modelo','anio','patente','km','notas'].forEach(f =>
+    document.getElementById('presup-'+f).value = '');
+  document.getElementById('presup-items').innerHTML = '';
+  document.getElementById('presup-total').textContent = '$0';
+  agregarItem('presup-items','mano_obra');
+  document.getElementById('modal-presupuesto').classList.add('open');
+}
+
+async function editarPresupuesto(id) {
+  try {
+    const res = await fetch(API+'/api/presupuestos/'+id);
+    const p   = await res.json();
+    document.getElementById('presup-id').value = getId(p);
+    document.getElementById('modal-presup-title').textContent = `Editar N° ${String(p.numero||0).padStart(4,'0')}`;
+    document.getElementById('presup-cliente').value   = p.cliente||'';
+    document.getElementById('presup-telefono').value  = p.telefono||'';
+    document.getElementById('presup-marca').value     = p.marca||'';
+    document.getElementById('presup-modelo').value    = p.modelo||'';
+    document.getElementById('presup-anio').value      = p.anio||'';
+    document.getElementById('presup-patente').value   = p.patente||'';
+    document.getElementById('presup-km').value        = p.km||'';
+    document.getElementById('presup-notas').value     = p.notas||'';
+    document.getElementById('presup-items').innerHTML = '';
+    (p.items||[]).forEach(i => agregarItem('presup-items', i.tipo, i.descripcion, i.valor));
+    if(!(p.items||[]).length) agregarItem('presup-items','mano_obra');
+    document.getElementById('modal-presupuesto').classList.add('open');
+  } catch(e) { toast('Error cargando presupuesto', false); }
+}
+
+async function guardarPresupuesto(generarPDF) {
+  const id    = document.getElementById('presup-id').value;
+  const items = getItems('presup-items');
+  const payload = {
+    cliente:  document.getElementById('presup-cliente').value.trim(),
+    telefono: document.getElementById('presup-telefono').value.trim(),
+    marca:    document.getElementById('presup-marca').value.trim(),
+    modelo:   document.getElementById('presup-modelo').value.trim(),
+    anio:     document.getElementById('presup-anio').value.trim(),
+    patente:  document.getElementById('presup-patente').value.trim().toUpperCase(),
+    km:       document.getElementById('presup-km').value.trim(),
+    notas:    document.getElementById('presup-notas').value.trim(),
+    items
+  };
+  if(!payload.cliente) return toast('Ingresa el nombre del cliente', false);
+  try {
+    let saved;
+    if(id) {
+      const r = await fetch(API+'/api/presupuestos/'+id, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      saved = await r.json();
+    } else {
+      const r = await fetch(API+'/api/presupuestos', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      saved = await r.json();
+    }
+    cerrarModal('modal-presupuesto');
+    toast('Presupuesto guardado ✓');
+    loadPresupuestos();
+    if(generarPDF) setTimeout(() => generarPDFPresupuesto(saved), 400);
+  } catch(e) { toast('Error guardando', false); }
+}
+
+async function eliminarPresupuesto(id) {
+  if(!confirm('¿Eliminar este presupuesto?')) return;
+  await fetch(API+'/api/presupuestos/'+id, {method:'DELETE'});
+  toast('Eliminado');
+  loadPresupuestos();
+}
+
+async function descargarPresupuestoPDF(id) {
+  try {
+    const res = await fetch(API+'/api/presupuestos/'+id);
+    const p   = await res.json();
+    generarPDFPresupuesto(p);
+  } catch(e) { toast('Error generando PDF', false); }
+}
+
+// ─── PDF PRESUPUESTO (tema blanco, datos reales) ──────────────────────
+function dibujarLogoPDF(doc, x, y) {
+  // Carrocería
+  doc.setFillColor(200,168,75);
+  doc.roundedRect(x, y+6, 36, 11, 2, 2, 'F');
+  // Techo
+  doc.roundedRect(x+4, y+1, 28, 8, 2, 2, 'F');
+  // Ventanas (blanco semitransparente simulado con gris claro)
+  doc.setFillColor(230,235,240);
+  doc.roundedRect(x+5, y+2, 11, 5, 1, 1, 'F');
+  doc.roundedRect(x+18, y+2, 11, 5, 1, 1, 'F');
+  // Ruedas
+  doc.setFillColor(50,50,50);
+  doc.circle(x+7, y+17, 4, 'F');
+  doc.circle(x+29, y+17, 4, 'F');
+  doc.setFillColor(200,168,75);
+  doc.circle(x+7, y+17, 2, 'F');
+  doc.circle(x+29, y+17, 2, 'F');
+  // Faros
+  doc.setFillColor(255,255,200);
+  doc.rect(x+1, y+10, 3, 2, 'F');
+  doc.setFillColor(220,60,60);
+  doc.rect(x+32, y+10, 3, 2, 'F');
+  // Línea de capó
+  doc.setDrawColor(170,135,50);
+  doc.setLineWidth(0.3);
+  doc.line(x+4, y+6, x+36, y+6);
+}
+
+function generarPDFPresupuesto(p) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = 210, M = 18;
+
+  // ── HEADER blanco con línea dorada ──
+  doc.setFillColor(255,255,255);
+  doc.rect(0,0,W,56,'F');
+  doc.setFillColor(200,168,75);
+  doc.rect(0,53,W,3,'F');
+
+  // Logo auto
+  dibujarLogoPDF(doc, M, 10);
+
+  // Nombre taller
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(24);
+  doc.setTextColor(30,30,35);
+  doc.text('BGarage', M+46, 22);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(120,120,130);
+  doc.text('Taller Automotriz', M+46, 29);
+
+  // Badge PRESUPUESTO (derecha)
+  doc.setFillColor(200,168,75);
+  doc.roundedRect(W-68, 10, 50, 12, 2, 2, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.setTextColor(255,255,255);
+  doc.text('PRESUPUESTO', W-43, 18, {align:'center'});
+
+  // N° y fecha (derecha)
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.setTextColor(50,50,60);
+  doc.text(`N° ${String(p.numero||0).padStart(4,'0')}`, W-43, 28, {align:'center'});
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(120,120,130);
+  doc.text(`Fecha: ${fmtDate(p.fecha)}`, W-43, 34, {align:'center'});
+
+  let y = 64;
+
+  // ── DATOS CLIENTE + VEHÍCULO ──
+  const colW = (W-2*M-8)/2;
+
+  // Box cliente
+  doc.setFillColor(248,249,250);
+  doc.setDrawColor(228,230,234);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(M, y, colW, 36, 3, 3, 'FD');
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(7);
+  doc.setTextColor(160,160,170);
+  doc.text('CLIENTE', M+6, y+8);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(30,30,35);
+  doc.text(p.cliente || '—', M+6, y+17);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100,100,110);
+  if(p.telefono) doc.text(p.telefono, M+6, y+25);
+
+  // Box vehículo
+  const cx = M + colW + 8;
+  doc.setFillColor(248,249,250);
+  doc.roundedRect(cx, y, colW, 36, 3, 3, 'FD');
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(7);
+  doc.setTextColor(160,160,170);
+  doc.text('VEHÍCULO', cx+6, y+8);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(30,30,35);
+  const nombreAuto = `${p.marca||''} ${p.modelo||''} ${p.anio||''}`.trim() || '—';
+  doc.text(nombreAuto, cx+6, y+17);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100,100,110);
+  const lineaVehiculo = [p.patente?'Patente: '+p.patente:'', p.km?'KM: '+p.km:''].filter(Boolean).join('   ');
+  if(lineaVehiculo) doc.text(lineaVehiculo, cx+6, y+25);
+
+  y += 44;
+
+  // ── TABLA ITEMS ──
+  // Header tabla
+  doc.setFillColor(40,40,50);
+  doc.rect(M, y, W-2*M, 9, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(200,168,75);
+  doc.text('DESCRIPCIÓN', M+5, y+6);
+  doc.text('TIPO', M+120, y+6);
+  doc.text('VALOR', W-M-5, y+6, {align:'right'});
+  y += 11;
+
+  const items = p.items || [];
+  if(!items.length) {
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.setTextColor(150,150,160);
+    doc.text('Sin ítems registrados', M+5, y+6);
+    y += 12;
+  }
+
+  items.forEach((item, idx) => {
+    // Fila alternada
+    if(idx%2===0) {
+      doc.setFillColor(248,249,250);
+      doc.rect(M, y-1, W-2*M, 9, 'F');
+    }
+    // Línea separadora sutil
+    doc.setDrawColor(228,230,234);
+    doc.setLineWidth(0.2);
+    doc.line(M, y+8, W-M, y+8);
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40,40,50);
+    doc.text(item.descripcion||'', M+5, y+5.5);
+
+    // Tipo badge
+    if(item.tipo==='mano_obra') {
+      doc.setFillColor(255,248,225);
+      doc.roundedRect(M+112, y+0.5, 24, 6, 1, 1, 'F');
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7);
+      doc.setTextColor(168,132,42);
+      doc.text('MANO OBRA', M+124, y+5, {align:'center'});
+    } else {
+      doc.setFillColor(232,244,255);
+      doc.roundedRect(M+112, y+0.5, 24, 6, 1, 1, 'F');
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7);
+      doc.setTextColor(41,128,185);
+      doc.text('REPUESTO', M+124, y+5, {align:'center'});
+    }
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40,40,50);
+    doc.text(fmt(item.valor), W-M-5, y+5.5, {align:'right'});
+    y += 9;
+  });
+
+  // ── TOTAL ──
+  y += 4;
+  doc.setFillColor(40,40,50);
+  doc.rect(M, y, W-2*M, 12, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(255,255,255);
+  doc.text('TOTAL', M+6, y+8);
+  doc.setTextColor(200,168,75);
+  doc.text(fmt(calcularTotalItems(items)), W-M-5, y+8, {align:'right'});
+  y += 18;
+
+  // ── NOTAS ──
+  if(p.notas) {
+    doc.setFillColor(255,253,240);
+    doc.setDrawColor(220,200,140);
+    doc.setLineWidth(0.3);
+    const notasLines = doc.splitTextToSize(p.notas, W-2*M-16);
+    doc.roundedRect(M, y, W-2*M, notasLines.length*5+10, 2, 2, 'FD');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(140,110,40);
+    doc.text('OBSERVACIONES', M+6, y+7);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(80,70,40);
+    doc.text(notasLines, M+6, y+13);
+    y += notasLines.length*5 + 18;
+  }
+
+  // ── FIRMA ──
+  y = Math.max(y, 248);
+  doc.setDrawColor(200,168,75);
+  doc.setLineWidth(0.5);
+  doc.line(M, y, M+68, y);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(40,40,50);
+  doc.text('Bastian Espinoza F.', M, y+7);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(100,100,110);
+  doc.text('+56 9 5935 5607', M, y+13);
+  doc.text('BGarage — Taller Automotriz', M, y+19);
+
+  // ── PIE DE PÁGINA ──
+  doc.setFillColor(200,168,75);
+  doc.rect(0,285,W,12,'F');
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(255,255,255);
+  doc.text('BGarage — Taller Automotriz  ·  +56 9 5935 5607', W/2, 292, {align:'center'});
+
+  const nombre = `presupuesto-${String(p.numero||0).padStart(4,'0')}-${(p.cliente||'cliente').replace(/\s+/g,'-').toLowerCase()}`;
+  doc.save(nombre+'.pdf');
+  toast('PDF generado ✓');
+}
+
+// ─── REPARACIONES ─────────────────────────────────────────────────────
+async function loadReparaciones() {
+  try {
+    const res  = await fetch(API+'/api/reparaciones');
+    const data = await res.json();
+    document.getElementById('rep-count').textContent = `(${data.length})`;
+
+    const cols = { en_reparacion:[], presupuesto_enviado:[], entregado:[] };
+    data.forEach(r => { const k = r.estado||'en_reparacion'; if(cols[k]) cols[k].push(r); });
+
+    const render = (key, bodyId, cntId) => {
+      const items = cols[key];
+      document.getElementById(cntId).textContent = items.length;
+      const body = document.getElementById(bodyId);
+      if(!items.length) {
+        body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:.8rem">Sin vehículos</div>';
+        return;
+      }
+      body.innerHTML = items.map(r => {
+        const id    = getId(r);
+        const total = calcularTotalItems(r.items);
+        return `
+        <div class="kanban-card" onclick="editarReparacion('${id}')">
+          <div class="kc-patente">${r.patente||'—'}</div>
+          <div class="kc-auto">${[r.marca,r.modelo,r.anio].filter(Boolean).join(' ')||'Vehículo'}</div>
+          <div class="kc-tipo">${r.tipo||'Sin tipo'}</div>
+          <div class="kc-owner">👤 ${r.cliente||'Sin propietario'}</div>
+          ${r.fechaEntrega?`<div style="font-size:.72rem;color:var(--text3);margin-top:4px">📅 ${fmtDate(r.fechaEntrega)}</div>`:''}
+          ${total>0?`<div style="font-size:.85rem;font-weight:700;color:var(--accent);margin-top:6px">${fmt(total)}</div>`:''}
+          <div class="kc-actions" onclick="event.stopPropagation()">
+            ${key==='en_reparacion'?`<button class="btn btn-sm btn-secondary" onclick="cambiarEstado('${id}','presupuesto_enviado')">→ Presup.</button>`:''}
+            ${key==='presupuesto_enviado'?`<button class="btn btn-sm btn-secondary" onclick="cambiarEstado('${id}','entregado')">→ Entregar</button>`:''}
+            ${key==='entregado'?`<button class="btn btn-sm btn-secondary" onclick="descargarInformePDF('${id}')">📄 Informe</button>`:''}
+            <button class="btn btn-sm btn-danger" onclick="eliminarReparacion('${id}')">🗑</button>
+          </div>
+        </div>`;
+      }).join('');
+    };
+
+    render('en_reparacion','body-reparacion','cnt-reparacion');
+    render('presupuesto_enviado','body-presupuesto','cnt-presupuesto');
+    render('entregado','body-entregado','cnt-entregado');
+  } catch(e) { toast('Error cargando reparaciones', false); }
+}
+
+function abrirModalReparacion() {
+  document.getElementById('rep-id').value = '';
+  document.getElementById('modal-rep-title').textContent = 'Nueva reparación';
+  ['cliente','telefono','marca','modelo','anio','patente','km','tipo','descripcion','notas'].forEach(f =>
+    document.getElementById('rep-'+f).value = '');
+  document.getElementById('rep-estado').value = 'en_reparacion';
+  document.getElementById('rep-fecha-entrega').value = '';
+  document.getElementById('rep-items').innerHTML = '';
+  document.getElementById('rep-total').textContent = '$0';
+  agregarItem('rep-items','mano_obra');
+  document.getElementById('modal-reparacion').classList.add('open');
+}
+
+async function editarReparacion(id) {
+  try {
+    const res = await fetch(API+'/api/reparaciones/'+id);
+    const r   = await res.json();
+    document.getElementById('rep-id').value        = getId(r);
+    document.getElementById('modal-rep-title').textContent = `Editar — ${r.marca||''} ${r.modelo||''}`;
+    document.getElementById('rep-cliente').value    = r.cliente||'';
+    document.getElementById('rep-telefono').value   = r.telefono||'';
+    document.getElementById('rep-marca').value      = r.marca||'';
+    document.getElementById('rep-modelo').value     = r.modelo||'';
+    document.getElementById('rep-anio').value       = r.anio||'';
+    document.getElementById('rep-patente').value    = r.patente||'';
+    document.getElementById('rep-km').value         = r.km||'';
+    document.getElementById('rep-tipo').value       = r.tipo||'';
+    document.getElementById('rep-descripcion').value= r.descripcion||'';
+    document.getElementById('rep-notas').value      = r.notas||'';
+    document.getElementById('rep-estado').value     = r.estado||'en_reparacion';
+    document.getElementById('rep-fecha-entrega').value = r.fechaEntrega ? r.fechaEntrega.substring(0,10) : '';
+    document.getElementById('rep-items').innerHTML  = '';
+    (r.items||[]).forEach(i => agregarItem('rep-items', i.tipo, i.descripcion, i.valor));
+    if(!(r.items||[]).length) agregarItem('rep-items','mano_obra');
+    document.getElementById('modal-reparacion').classList.add('open');
+  } catch(e) { toast('Error cargando reparación', false); }
+}
+
+async function guardarReparacion() {
+  const id    = document.getElementById('rep-id').value;
+  const items = getItems('rep-items');
+  const payload = {
+    cliente:     document.getElementById('rep-cliente').value.trim(),
+    telefono:    document.getElementById('rep-telefono').value.trim(),
+    marca:       document.getElementById('rep-marca').value.trim(),
+    modelo:      document.getElementById('rep-modelo').value.trim(),
+    anio:        document.getElementById('rep-anio').value.trim(),
+    patente:     document.getElementById('rep-patente').value.trim().toUpperCase(),
+    km:          document.getElementById('rep-km').value.trim(),
+    tipo:        document.getElementById('rep-tipo').value.trim(),
+    descripcion: document.getElementById('rep-descripcion').value.trim(),
+    notas:       document.getElementById('rep-notas').value.trim(),
+    estado:      document.getElementById('rep-estado').value,
+    fechaEntrega:document.getElementById('rep-fecha-entrega').value||null,
+    items
+  };
+  if(!payload.cliente) return toast('Ingresa el nombre del propietario', false);
+  if(!payload.tipo)    return toast('Ingresa el tipo de reparación', false);
+  try {
+    if(id) {
+      await fetch(API+'/api/reparaciones/'+id, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    } else {
+      await fetch(API+'/api/reparaciones', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }
+    cerrarModal('modal-reparacion');
+    toast('Reparación guardada ✓');
+    loadReparaciones();
+  } catch(e) { toast('Error guardando', false); }
+}
+
+async function cambiarEstado(id, nuevoEstado) {
+  await fetch(API+'/api/reparaciones/'+id, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:nuevoEstado})});
+  toast('Estado actualizado ✓');
+  loadReparaciones();
+}
+
+async function eliminarReparacion(id) {
+  if(!confirm('¿Eliminar esta reparación?')) return;
+  await fetch(API+'/api/reparaciones/'+id, {method:'DELETE'});
+  toast('Eliminado');
+  loadReparaciones();
+}
+
+// ─── PDF INFORME REPARACIÓN ────────────────────────────────────────────
+async function descargarInformePDF(id) {
+  try {
+    const res = await fetch(API+'/api/reparaciones/'+id);
+    const r   = await res.json();
+    generarPDFInforme(r);
+  } catch(e) { toast('Error generando informe', false); }
+}
+
+function generarPDFInforme(r) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = 210, M = 18;
+
+  // Header blanco
+  doc.setFillColor(255,255,255);
+  doc.rect(0,0,W,56,'F');
+  doc.setFillColor(39,174,96);
+  doc.rect(0,53,W,3,'F');
+
+  dibujarLogoPDF(doc, M, 10);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(24);
+  doc.setTextColor(30,30,35);
+  doc.text('BGarage', M+46, 22);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(120,120,130);
+  doc.text('Taller Automotriz', M+46, 29);
+
+  // Badge INFORME verde
+  doc.setFillColor(39,174,96);
+  doc.roundedRect(W-68, 10, 50, 12, 2, 2, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.setTextColor(255,255,255);
+  doc.text('INFORME', W-43, 18, {align:'center'});
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100,100,110);
+  doc.text('Reparación completada', W-43, 27, {align:'center'});
+  doc.text(`Fecha: ${fmtDate(new Date())}`, W-43, 33, {align:'center'});
+
+  let y = 64;
+  const colW = (W-2*M-8)/2;
+
+  // Box propietario
+  doc.setFillColor(248,249,250);
+  doc.setDrawColor(228,230,234);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(M, y, colW, 40, 3, 3, 'FD');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(7);
+  doc.setTextColor(160,160,170);
+  doc.text('PROPIETARIO', M+6, y+8);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(30,30,35);
+  doc.text(r.cliente||'—', M+6, y+17);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100,100,110);
+  if(r.telefono) doc.text(r.telefono, M+6, y+25);
+
+  // Box vehículo
+  const cx = M+colW+8;
+  doc.roundedRect(cx, y, colW, 40, 3, 3, 'FD');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(7);
+  doc.setTextColor(160,160,170);
+  doc.text('VEHÍCULO', cx+6, y+8);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(30,30,35);
+  doc.text(`${r.marca||''} ${r.modelo||''} ${r.anio||''}`.trim()||'—', cx+6, y+17);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100,100,110);
+  const vi = [r.patente?'Patente: '+r.patente:'', r.km?'KM: '+r.km:''].filter(Boolean).join('   ');
+  if(vi) doc.text(vi, cx+6, y+25);
+  doc.text(`Ingreso: ${fmtDate(r.fechaIngreso)}`, cx+6, y+32);
+  y += 48;
+
+  // Box trabajo
+  doc.setFillColor(248,249,250);
+  doc.roundedRect(M, y, W-2*M, 22, 3, 3, 'FD');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(7);
+  doc.setTextColor(160,160,170);
+  doc.text('TRABAJO REALIZADO', M+6, y+8);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(30,30,35);
+  doc.text(r.tipo||'—', M+6, y+17);
+  y += 28;
+
+  if(r.descripcion) {
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100,100,110);
+    const lines = doc.splitTextToSize(r.descripcion, W-2*M);
+    doc.text(lines, M, y);
+    y += lines.length*5 + 8;
+  }
+
+  // Tabla ítems
+  doc.setFillColor(40,40,50);
+  doc.rect(M, y, W-2*M, 9, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(39,174,96);
+  doc.text('DESCRIPCIÓN', M+5, y+6);
+  doc.text('TIPO', M+120, y+6);
+  doc.text('VALOR', W-M-5, y+6, {align:'right'});
+  y += 11;
+
+  const items = r.items||[];
+  items.forEach((item, idx) => {
+    if(idx%2===0) { doc.setFillColor(248,249,250); doc.rect(M, y-1, W-2*M, 9, 'F'); }
+    doc.setDrawColor(228,230,234);
+    doc.setLineWidth(0.2);
+    doc.line(M, y+8, W-M, y+8);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40,40,50);
+    doc.text(item.descripcion||'', M+5, y+5.5);
+    if(item.tipo==='mano_obra') {
+      doc.setFillColor(255,248,225);
+      doc.roundedRect(M+112, y+0.5, 24, 6, 1, 1, 'F');
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7);
+      doc.setTextColor(168,132,42);
+      doc.text('MANO OBRA', M+124, y+5, {align:'center'});
+    } else {
+      doc.setFillColor(232,244,255);
+      doc.roundedRect(M+112, y+0.5, 24, 6, 1, 1, 'F');
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7);
+      doc.setTextColor(41,128,185);
+      doc.text('REPUESTO', M+124, y+5, {align:'center'});
+    }
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40,40,50);
+    doc.text(fmt(item.valor), W-M-5, y+5.5, {align:'right'});
+    y += 9;
+  });
+
+  // Total
+  y += 4;
+  doc.setFillColor(40,40,50);
+  doc.rect(M, y, W-2*M, 12, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(255,255,255);
+  doc.text('TOTAL', M+6, y+8);
+  doc.setTextColor(39,174,96);
+  doc.text(fmt(calcularTotalItems(items)), W-M-5, y+8, {align:'right'});
+  y += 18;
+
+  if(r.notas) {
+    doc.setFillColor(240,255,245);
+    doc.setDrawColor(180,220,190);
+    doc.setLineWidth(0.3);
+    const lines = doc.splitTextToSize(r.notas, W-2*M-16);
+    doc.roundedRect(M, y, W-2*M, lines.length*5+10, 2, 2, 'FD');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(39,130,80);
+    doc.text('OBSERVACIONES', M+6, y+7);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(50,100,70);
+    doc.text(lines, M+6, y+13);
+    y += lines.length*5+18;
+  }
+
+  // Firma
+  y = Math.max(y, 248);
+  doc.setDrawColor(39,174,96);
+  doc.setLineWidth(0.5);
+  doc.line(M, y, M+68, y);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(40,40,50);
+  doc.text('Bastian Espinoza F.', M, y+7);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(100,100,110);
+  doc.text('+56 9 5935 5607', M, y+13);
+  doc.text('BGarage — Taller Automotriz', M, y+19);
+
+  // Pie de página
+  doc.setFillColor(39,174,96);
+  doc.rect(0,285,W,12,'F');
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(255,255,255);
+  doc.text('BGarage — Taller Automotriz  ·  +56 9 5935 5607', W/2, 292, {align:'center'});
+
+  const nombre = `informe-${(r.patente||'vehiculo').toLowerCase()}-${(r.cliente||'cliente').replace(/\s+/g,'-').toLowerCase()}`;
+  doc.save(nombre+'.pdf');
+  toast('Informe PDF generado ✓');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+loadPresupuestos();
+</script>
+</body>
+</html>
