@@ -1044,6 +1044,64 @@ async function login() {
     alert(data.error);
   }
 }
+  <script>
+
+// LOGIN REAL CON BACKEND
+async function doLogin() {
+
+  const email = document.getElementById('login-user').value;
+  const password = document.getElementById('login-pass').value;
+  const errorBox = document.getElementById('login-error');
+
+  errorBox.style.display = "none";
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    console.log("LOGIN:", data);
+
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+
+      // OCULTAR LOGIN
+      document.getElementById('login-screen').style.display = 'none';
+
+    } else {
+      errorBox.innerText = data.error || "Error en login";
+      errorBox.style.display = "block";
+    }
+
+  } catch (err) {
+    console.error(err);
+    errorBox.innerText = "Error de conexión con servidor";
+    errorBox.style.display = "block";
+  }
+}
+
+
+// LOGOUT
+function logout() {
+  localStorage.removeItem('token');
+  location.reload();
+}
+
+
+// AUTO LOGIN
+window.onload = () => {
+  const token = localStorage.getItem('token');
+
+  if (token) {
+    document.getElementById('login-screen').style.display = 'none';
+  }
+};
+
+</script>
 </script>
 </body>
 </html>
